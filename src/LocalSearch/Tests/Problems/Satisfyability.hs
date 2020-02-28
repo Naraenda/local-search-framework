@@ -1,5 +1,12 @@
 module LocalSearch.Tests.Problems.Satisfyability 
-  (SATProblem, SAT, Clause, Variable, Solution) where
+  ( SATProblem(..)
+  , SAT(..)
+  , Clause(..)
+  , Variable(..)
+  , Solution(..)
+  , Evaluable(..)
+  )
+  where
 
 import Data.List(intercalate)
 import Data.Set(Set, unions, singleton)
@@ -37,7 +44,7 @@ instance Evaluable SAT where
   vars (SAT x) = unions $ fmap vars x
 
 instance Evaluable Clause where
-  eval e (Clause x) = check $ foldl f (True, 0) x
+  eval e (Clause x) = check $ foldl f (False, 0) x
     where 
       f a b = merge a $ eval e b
       merge (a0, b0) (a1, b1) = (a0 || a1, 0)
@@ -85,6 +92,7 @@ instance Show Variable where
 
 -- | A satisfyability problem with an associated possible solution.
 data SATProblem = SP SAT Solution
+  deriving (Show)
 
 instance Searchable SATProblem where
   score (SP f x) = fromIntegral . snd $ eval x f
