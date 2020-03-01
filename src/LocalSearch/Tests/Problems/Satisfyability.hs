@@ -5,14 +5,20 @@ module LocalSearch.Tests.Problems.Satisfyability
   , Variable(..)
   , Solution(..)
   , Evaluable(..)
+
+  , readCNF
   )
   where
 
 import Data.List(intercalate)
 import Data.Set(Set, unions, singleton)
 import Data.Map(Map, (!), adjust, keys)
-import LocalSearch.Framework.SearchProblem
+
 import Test.QuickCheck
+
+import Text.Parsec
+
+import LocalSearch.Framework.SearchProblem
 
 -- Problem definition
 
@@ -97,3 +103,26 @@ data SATProblem = SP SAT Solution
 instance Searchable SATProblem where
   score (SP f x) = fromIntegral . snd $ eval x f
   neighbours (SP f x) = [SP f $ adjust not i x | i <- keys x]
+
+-- Parser; we should split this file somehow
+readCNF :: FilePath -> IO (Either ParseError SAT)
+readCNF x = readFile x >>= return . runParser pSAT () x
+
+-- intercalate " & " (show <$> x)
+pSAT :: Parsec String () SAT
+pSAT = SAT <$> sepBy pClause (string " & ")
+
+-- "(" ++ intercalate "|" (show <$> x) ++ ")"
+pClause :: Parsec String () Clause
+pClause = Clause <$ char '(' <*> sepBy pVariable (char '|') <* char ')'
+
+{-
+instance Show Variable where
+  show (Not x) = "-" ++ x
+  show (Var x) = x
+-}
+pVariable :: Parsec String () Variable
+pVariable =
+      Not <$  char '-' <*> many letter
+  <|> Var <$>              many letter
+

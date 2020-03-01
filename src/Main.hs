@@ -7,7 +7,8 @@ import Data.Map (fromList)
 
 main :: IO ()
 main = do
-  let problem = exampleProblem
+  (Right formula) <- readCNF "tests/cnf.txt"
+  let problem = SP formula . fromList $ (,) <$> toList (vars formula) <*> pure False
   solution <- runClimb problem
   putStrLn . show $ solution
 
