@@ -17,8 +17,9 @@ category:            Language -- Should be changed? TODO
 build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
-  -- exposed-modules:
 library
+  exposed-modules:
+      LocalSearch.Framework.HillClimbing
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.12 && <4.13
