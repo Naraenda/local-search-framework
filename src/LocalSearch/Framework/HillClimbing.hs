@@ -1,27 +1,41 @@
 module LocalSearch.Framework.HillClimbing
-  ( SearchState(SState)
-  , runClimb
+  ( runClimb
   )
 where
 
--- Completely bogus state just for random tests
-data SearchState = SState { getScore :: Int }
+import System.Random
 
--- | Takes the current `SearchState` and returns a new state. This new state is
--- then used to see if this mutation was better. This new mutated state is used
--- in `runClimb`; if this new state was better, we keep the new state, and
--- otherwise we keep the old state.
+import LocalSearch.Framework.SearchProblem (Searchable(score, neighbours))
+
+-- | Runs a hill climbing algorithm on a `Searchable`. Uses the `neighbours`
+-- function of the Searchable to discover new states, and randomly selects a
+-- better one, if it exists. If the `score` of the new state is lower than or
+-- equal to the one of the old state, it discards the new state. Otherwise,
+-- this will take the new state. This stops when a local optimum is found.
 --
--- We should probably change this to not return an `IO State`, but a stricter
--- type that only allows drawing random values.
-mutateState :: SearchState -> IO SearchState
-mutateState = undefined
+-- This function should probably get a different signature later. I'd prefer
+-- not having an `IO` requirement on this, but rather a different monad that
+-- allows for randomness to happen, even if calling it requires IO afterwards.
+runClimb :: Searchable a => a -> IO a
+runClimb x = do
+  let s = score x
+  let ns = neighbours x
+  let nsScores = score <$> ns
+  let newStates = filter ((>s) . score) ns
 
--- | A scoring function for the given state. Used to determine whether one
--- `SearchState` is better or worse than another.
-scoreState :: SearchState -> Float
-scoreState = fromIntegral . getScore
 
-runClimb :: SearchState -> IO SearchState
-runClimb = undefined
+  case newStates of
+    [] -> return x
+    _  -> do
+      nextState <- chooseRandom newStates
+      runClimb nextState
+
+-- | Helper function to choose a random element from a list. Probably exists
+-- somewhere in the standard library; in that case, we need to use that one.
+-- Also, I'd prefer a non-IO monad, if at all possible.
+chooseRandom :: [a] -> IO a
+chooseRandom xs = do
+  let len = length xs
+  i <- randomRIO (0, len - 1)
+  return $ xs !! i
 
