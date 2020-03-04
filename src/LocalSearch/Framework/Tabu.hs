@@ -1,4 +1,3 @@
-{-# LANGUAGE PatternSynonyms #-}
 module LocalSearch.Framework.Tabu 
   ( Tabuable(..)
   , Tabu(..)
