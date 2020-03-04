@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FunctionalDependencies #-}
+
 module LocalSearch.Framework.Tabu 
   ( Tabuable(..)
   , Tabu(..)
@@ -7,8 +9,8 @@ module LocalSearch.Framework.Tabu
 import LocalSearch.Framework.SearchProblem
 
 -- | Defines a searchable space where a Tabu' list can be built in
-class Searchable a => Tabuable a where
-  fingerprint :: Eq b => a -> b
+class (Searchable s, Eq t) => Tabuable s t | s -> t where
+  fingerprint :: s -> t
 
 -- | Wraps a state s with a list of t tabu's. If s is tabuable, then
 -- its neighbours do not include elements from the tabu list.
@@ -18,13 +20,16 @@ data Tabu s t = Tabu
   , tabuSize :: Int }
 
 -- | Wraps state s into a 'Tabu' with a maximum of n tabu's.
-makeTabu :: (Eq t, Tabuable s) => Int -> s -> Tabu s t
+makeTabu :: (Tabuable s t) => Int -> s -> Tabu s t
 makeTabu n s = Tabu s [] n
 
-instance (Eq t, Tabuable s) => Tabuable (Tabu s t) where
+instance Show s => Show (Tabu s t) where
+  show = show . state
+
+instance (Tabuable s  t) => Tabuable (Tabu s t) t where
   fingerprint = fingerprint . state
 
-instance (Eq t, Tabuable s) => Searchable (Tabu s t) where
+instance (Tabuable s t) => Searchable (Tabu s t) where
   score = score . state
   neighbours s@(Tabu _ l _) = 
     -- Update 'Tabu' data:
@@ -36,7 +41,7 @@ instance (Eq t, Tabuable s) => Searchable (Tabu s t) where
 
 -- | Replaces the internal state of 'Tabu' and adds the old state
 -- to the tabu list.
-replaceState :: (Eq t, Tabuable s) =>  Tabu s t -> s -> Tabu s t
+replaceState :: (Tabuable s t) =>  Tabu s t -> s -> Tabu s t
 replaceState t@(Tabu s l n) x = Tabu x l' n
   where
     l' = fingerprint t : drop (length l - n + 1) l

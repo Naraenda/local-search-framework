@@ -1,3 +1,6 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module LocalSearch.Tests.Problems.Satisfyability 
   ( SATProblem(..)
   , SAT(..)
@@ -19,6 +22,7 @@ import Test.QuickCheck
 import Text.Parsec
 
 import LocalSearch.Framework.SearchProblem
+import LocalSearch.Framework.Tabu(Tabuable(..))
 
 -- Problem definition
 
@@ -33,6 +37,8 @@ data Variable
   = Var String
   | Not String
 
+-- | Solutions to the SAT problems is a string variable, and the
+-- value of that variable.
 type Solution = Map String Bool
 
 -- | A class that defines (partial) evaluations of a SAT problem.
@@ -103,6 +109,11 @@ data SATProblem = SP SAT Solution
 instance Searchable SATProblem where
   score (SP f x) = fromIntegral . snd $ eval x f
   neighbours (SP f x) = [SP f $ adjust not i x | i <- keys x]
+
+-- We should match tabu on the solution. Solution is a map, and
+-- has instance Eq.
+instance Tabuable SATProblem Solution where
+  fingerprint (SP _ x) = x
 
 -- Parser; we should split this file somehow
 readCNF :: FilePath -> IO (Either ParseError SAT)
