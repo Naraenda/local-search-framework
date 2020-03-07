@@ -1,0 +1,27 @@
+c Lines starting with c are comments!
+c Example: (x | z | -w) & (w) & (y | -z)
+c p line is problem line:
+c    cnf means we're dealing with a cnf
+c    4 means that we have 4 variables
+c    3 means that there are 3 clauses
+c    Note that clauses are terminated by the 0, NOT by newlines!
+p cnf 4 3
+1 3 -4 0
+4 0 2
+-3
+
+c Output files:
+c    Comments: same as before, starting with c.
+c      These can be used to add information like computation time, number of
+c      calculations, etc.
+c    Solution line:
+c      s TYPE SOLUTION VARIABLES CLAUSES
+c      s TYPE SOLUTION VARIABLES
+c      Type is cnf since we're doing cnf sat
+c      solution contains an integer corresponding to the solution value
+c      1 if satisfiable, 0 if not, -1 if no decision reached
+c      variables and clauses are same as input
+c    Variable line:
+c      One for each variable
+c      v V
+c        where V is the ID of the variable if it is true, or -ID if it is false

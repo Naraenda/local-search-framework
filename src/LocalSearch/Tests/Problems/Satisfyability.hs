@@ -10,9 +10,11 @@ module LocalSearch.Tests.Problems.Satisfyability
   )
   where
 
+import Data.Char (isSpace)
 import Data.List(intercalate)
 import Data.Set(Set, unions, singleton)
 import Data.Map(Map, (!), adjust, keys)
+import Data.Maybe (catMaybes)
 
 import Test.QuickCheck
 
@@ -106,7 +108,62 @@ instance Searchable SATProblem where
 
 -- Parser; we should split this file somehow
 readCNF :: FilePath -> IO (Either ParseError SAT)
-readCNF x = readFile x >>= return . runParser pSAT () x
+readCNF x = readFile x >>= return . runParser pCNFFile () x
+
+pCNFFile :: Parsec String () SAT
+pCNFFile = do
+  many pCommentLine
+  (vcount, ccount) <- pProblemLine
+  pWhitespace
+  cs <- pClauses ccount vcount
+  -- TODO better error handling?
+  return $ SAT cs
+
+pCommentLine :: Parsec String () String
+pCommentLine = char 'c' *> (option "" $ char ' ' *> many (noneOf "\n")) <* char '\n'
+
+pProblemLine :: Parsec String () (Int, Int)
+pProblemLine = (,) <$
+      char 'p'
+  <*  pWhitespace
+  <*  string "cnf"
+  <*  pWhitespace
+  <*> pInt
+  <*  pWhitespace
+  <*> pInt
+  <*  many (satisfy $ \x -> isSpace x && x /= '\n')
+  <*  char '\n'
+
+pInt :: Parsec String () Int
+pInt = read <$> many1 digit
+
+pClauses :: Int -- ^ The amount of clauses
+         -> Int -- ^ The amount of variables (for error handling)
+         -> Parsec String () [Clause] -- ^ The clauses in the input
+pClauses cc vc = fmap Clause <$> sequence (fmap (const pNonLastClause) [1..cc-1] ++ [pLastClause])
+
+pNonLastClause :: Parsec String () [Variable]
+pNonLastClause = (:) <$> pNotVar <*> pNonLastClause <|> do
+  x <- digit
+  if x == '0'
+    then pWhitespace *> return []
+    else do
+      xs <- many digit
+      pWhitespace
+      rest <- pNonLastClause
+      return $ Var (x:xs) : rest
+
+pLastClause :: Parsec String () [Variable]
+pLastClause = many $ pNotVar <|> pVar
+
+pVar :: Parsec String () Variable
+pVar = Var <$> many digit <* pWhitespace
+
+pNotVar :: Parsec String () Variable
+pNotVar = Not <$ char '-' <*> many digit <* pWhitespace
+
+pWhitespace :: Parsec String () ()
+pWhitespace = () <$ space <* spaces
 
 -- intercalate " & " (show <$> x)
 pSAT :: Parsec String () SAT
