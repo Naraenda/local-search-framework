@@ -20,6 +20,7 @@ extra-source-files:  CHANGELOG.md
 library
   exposed-modules:
       LocalSearch.Framework.HillClimbing
+    , LocalSearch.Framework.SimulatedAnnealing
   -- other-modules:
   -- other-extensions:
   build-depends:
