@@ -1,7 +1,6 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-module LocalSearch.Tests.Problems.Satisfyability 
+module LocalSearch.Tests.Problems.Satisfiability 
   ( SATProblem(..)
   , SAT(..)
   , Clause(..)
@@ -27,10 +26,10 @@ import LocalSearch.Framework.Tabu(Tabuable(..))
 -- Problem definition
 
 -- | A satisfyability problem consisting of conjunct 'Clause's.
-data SAT = SAT [Clause]
+newtype SAT = SAT [Clause]
 
 -- | A clause consisting of disjunct 'Variable's
-data Clause = Clause [Variable]
+newtype Clause = Clause [Variable]
 
 -- | A variable that might be negated.
 data Variable
@@ -72,14 +71,10 @@ instance Evaluable Variable where
 -- Arbitrary instances
 
 instance Arbitrary SAT where
-  arbitrary = do
-    x <- listOf1 (arbitrary :: Gen Clause)
-    return $ SAT x
+  arbitrary = SAT <$> listOf1 arbitrary
 
 instance Arbitrary Clause where
-  arbitrary = do 
-    x <- resize 3 $ listOf1 (arbitrary :: Gen Variable)
-    return $ Clause x
+  arbitrary = Clause <$> listOf1 arbitrary
     
 instance Arbitrary Variable where
   arbitrary = do
@@ -117,21 +112,14 @@ instance Tabuable SATProblem Solution where
 
 -- Parser; we should split this file somehow
 readCNF :: FilePath -> IO (Either ParseError SAT)
-readCNF x = readFile x >>= return . runParser pSAT () x
+readCNF x = runParser pSAT () x <$> readFile x 
 
--- intercalate " & " (show <$> x)
 pSAT :: Parsec String () SAT
 pSAT = SAT <$> sepBy pClause (string " & ")
 
--- "(" ++ intercalate "|" (show <$> x) ++ ")"
 pClause :: Parsec String () Clause
 pClause = Clause <$ char '(' <*> sepBy pVariable (char '|') <* char ')'
 
-{-
-instance Show Variable where
-  show (Not x) = "-" ++ x
-  show (Var x) = x
--}
 pVariable :: Parsec String () Variable
 pVariable =
       Not <$  char '-' <*> many letter

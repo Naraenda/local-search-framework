@@ -23,19 +23,13 @@ runClimb x = do
   let nsScores = score <$> ns
   let newStates = filter ((>s) . score) ns
 
-
   case newStates of
     [] -> return x
-    _  -> do
-      nextState <- chooseRandom newStates
-      runClimb nextState
+    _  -> chooseRandom newStates >>= runClimb
 
 -- | Helper function to choose a random element from a list. Probably exists
 -- somewhere in the standard library; in that case, we need to use that one.
 -- Also, I'd prefer a non-IO monad, if at all possible.
 chooseRandom :: [a] -> IO a
-chooseRandom xs = do
-  let len = length xs
-  i <- randomRIO (0, len - 1)
-  return $ xs !! i
+chooseRandom xs = (xs!!) <$> randomRIO (0, length xs - 1)
 
