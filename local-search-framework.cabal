@@ -37,6 +37,7 @@ executable local-search
     , LocalSearch.Framework.SearchProblem
     , LocalSearch.Framework.Tabu
     , LocalSearch.Tests.Problems.Satisfiability
+    , LocalSearch.Tests.Problems.TSP
   -- other-extensions:
   build-depends:
       base >=4.12 && <4.13
