@@ -14,6 +14,8 @@ import LocalSearch.Framework.SearchProblem
 import Text.Parsec
 import System.Random.Shuffle( shuffleM )
 
+-- * Solver
+
 data TSP = TSP
   { name  :: String
   , dimension :: Int
@@ -28,28 +30,36 @@ type Fields = [Field]
 type Field  = (String, String)
 type DistFunc a = Num a => Point a -> Point a -> a
 
--- * Solver
-
 instance Searchable TSP where
   neighbours p = [p { nodes = n } | n <- opt2 $ nodes p]
-  score = negate . distance euclidean . nodes
+  score = negate . tourDistance euclidean . nodes
 
+-- | Shuffles a TSP problem
 shuffle :: TSP -> IO TSP
 shuffle p = do
   let n = nodes p
   n' <- shuffleM n
   return $ p { nodes = n' }  
 
+-- | Given a distance function, calculates the distance of a tour
+-- such that the ends loops back to the beginning.
+tourDistance :: Num a => DistFunc a -> [Point a] -> a
+tourDistance f xs@(h:_) = distance f (xs ++ [h])
+
+-- | Given a distance function, calculates the distance of a route.
 distance :: Num a => DistFunc a -> [Point a] -> a
 distance f (x:y:r) = f x y + distance f (y:r)
 distance f _       = 0
 
+-- | Euclidean distance
 euclidean :: Floating a => DistFunc a
 euclidean (x1, y1) (x2, y2) = sqrt ((x1 - x2) ^ 2 + (y1 - y2) ^ 2)
 
+-- | Generates all different 2-opt swaps on a list.
 opt2 :: [a] -> [[a]]
 opt2 xs = [ reverseRange i j xs | i <- [1..length xs], j <- [0..i-1]]
 
+-- | Reverses a part of a list.
 reverseRange :: Int -> Int -> [a] -> [a]
 reverseRange i j xs 
   | i <= j     = h ++ reverse m ++ t
@@ -58,9 +68,9 @@ reverseRange i j xs
       (h, r) = splitAt i xs
       (m, t) = splitAt (j - i) r
 
-
 -- * Parsing
 
+-- | Loads a TSP from a file.
 readTSP :: FilePath -> IO (Either ParseError TSP)
 readTSP x = runParser pTSP () x <$> readFile x 
 
