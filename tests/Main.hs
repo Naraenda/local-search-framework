@@ -10,6 +10,7 @@ main :: IO ()
 main = do
   (Right formula) <- readCNF "tests/cnf.txt"
   let problem = SP formula . fromList $ (,) <$> toList (vars formula) <*> pure False
+  putStrLn "Running climb"
   solution <- runClimb $ makeTabu 10 problem
   print solution
 
