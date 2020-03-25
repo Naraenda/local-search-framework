@@ -13,6 +13,7 @@ import LocalSearch.Framework.SearchProblem
 
 import Text.Parsec
 import System.Random.Shuffle( shuffleM )
+import Control.Monad.Random.Lazy(Rand, RandomGen, getRandomR)
 
 -- * Solver
 
@@ -58,6 +59,13 @@ euclidean (x1, y1) (x2, y2) = sqrt ((x1 - x2) ^ 2 + (y1 - y2) ^ 2)
 -- | Generates all different 2-opt swaps on a list.
 opt2 :: [a] -> [[a]]
 opt2 xs = [ reverseRange i j xs | i <- [1..length xs], j <- [0..i-1]]
+
+opt2r :: RandomGen g => [a] -> Rand g [a]
+opt2r xs = do
+  i <- getRandomR (1, length xs - 1)
+  j <- getRandomR (0, i - 1)
+  return $ reverseRange i j xs
+
 
 -- | Reverses a part of a list.
 reverseRange :: Int -> Int -> [a] -> [a]

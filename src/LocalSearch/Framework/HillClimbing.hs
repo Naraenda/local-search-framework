@@ -4,8 +4,10 @@ module LocalSearch.Framework.HillClimbing
 where
 
 import System.Random
+import Control.Monad.Random.Lazy (evalRandIO)
+import Data.Maybe(catMaybes)
 
-import LocalSearch.Framework.SearchProblem (Searchable(score, neighbours))
+import LocalSearch.Framework.SearchProblem (Searchable(score, neighbours, randomNeighbour))
 
 -- | Runs a hill climbing algorithm on a `Searchable`. Uses the `neighbours`
 -- function of the Searchable to discover new states, and randomly selects a
