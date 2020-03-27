@@ -22,6 +22,7 @@ library
       LocalSearch.Framework.HillClimbing
     , LocalSearch.Framework.SearchProblem
     , LocalSearch.Framework.Tabu
+    , LocalSearch.Framework.GeneticAlgorithm
   build-depends:
       base >=4.12 && <4.13
     , MonadRandom
