@@ -1,4 +1,4 @@
-module LocalSearch.Tests.Problems.Satisfyability 
+module LocalSearch.Tests.Problems.Satisfiability 
   ( SATProblem(..)
   , SAT(..)
   , Clause(..)
@@ -183,3 +183,4 @@ pVariable =
       Not <$  char '-' <*> many letter
   <|> Var <$>              many letter
 
+  
