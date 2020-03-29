@@ -15,6 +15,7 @@ module LocalSearch.Tests.Problems.Satisfiability
 
 import Control.Monad.Random.Lazy hiding (fromList)
 
+import Data.Bifunctor (second)
 import Data.Foldable(toList)
 import Data.List(intercalate)
 import Data.Set(Set, unions, singleton)
@@ -80,6 +81,7 @@ instance Evaluable Variable where
   vars (Not x) = singleton x
   vars (Var x) = singleton x
 
+
 -- Arbitrary instances
 
 
@@ -129,7 +131,7 @@ instance Tabuable SATProblem Solution where
 -- Genetic instance
 -- | The indices here are inclusive, and the numbers must be in range of the list. This means that /some/ crossing over will always happen.
 data CrossOver = LeftOf Int | RightOf Int
-data Mutation = M
+data Mutation = Mut Int Mutation | EmptyMut
 
 instance EnumRandom SAT CrossOver where
   getRandomValue s = do
@@ -140,7 +142,17 @@ instance EnumRandom SAT CrossOver where
     return $ constructor ind
 
 instance EnumRandom SAT Mutation where
-  getRandomValue s = return M -- TODO FIXME Generate actual mutation
+  getRandomValue s =
+    do
+      q <- getRandomR (0.0, 1.0)
+      if q < p
+        then do
+          v <- getRandomR (0, length (vars s) - 1)
+          Mut v <$> getRandomValue s
+        else return EmptyMut
+    where
+      p :: Float
+      p = 0.075 -- TODO Make this a separate type-class!
 
 instance GeneticAlgorithm CrossOver Mutation SAT SATProblem where
   randomIndividual s  = SP s <$> sol
@@ -154,8 +166,18 @@ instance GeneticAlgorithm CrossOver Mutation SAT SATProblem where
       randBool = getRandom
 
   fitness (SP f x)    = fromIntegral . snd $ eval x f
-  mutation m x        = x -- TODO FIXME needs to actually mutate
+  mutation m x        = mutateSAT m x
   crossover co p1 p2  = crossoverSAT co p1 p2
+
+mutateSAT :: Mutation -> SATProblem -> SATProblem
+mutateSAT EmptyMut x  = x
+mutateSAT (Mut i m) (SP f x) =
+    mutateSAT m . SP f $ invertMapAt i x
+  where
+    invertMapAt i = fromList . invertListAt i . M.toList
+    invertListAt 0 (x:xs) = second not x : xs
+    invertListAt i (x:xs) = x : invertListAt (i - 1) xs
+  -- neighbours (SP f x) = [SP f $ adjust not i x | i <- keys x]
 
 -- The formulas are equal, so we only need one
 crossoverSAT :: CrossOver -> SATProblem -> SATProblem -> SATProblem
