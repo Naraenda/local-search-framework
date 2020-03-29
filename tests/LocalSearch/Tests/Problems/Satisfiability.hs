@@ -114,7 +114,7 @@ pCNFFile :: Parsec String () SAT
 pCNFFile = do
   many pCommentLine
   (vcount, ccount) <- pProblemLine
-  pWhitespace
+  spaces
   cs <- pClauses ccount vcount
   -- TODO better error handling?
   return $ SAT cs
