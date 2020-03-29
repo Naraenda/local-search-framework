@@ -26,34 +26,27 @@ import LocalSearch.Framework.Tabu(Tabuable(..))
 
 -- Problem definition
 
-
 -- | A satisfyability problem consisting of conjunct 'Clause's.
-
 newtype SAT = SAT [Clause]
 
 -- | A clause consisting of disjunct 'Variable's
-
 newtype Clause = Clause [Variable]
 
 -- | A variable that might be negated.
-
 data Variable
   = Var String
   | Not String
 
 -- | Solutions to the SAT problems is a string variable, and the
 -- value of that variable.
-
 type Solution = Map String Bool
 
 -- | A class that defines (partial) evaluations of a SAT problem.
-
 class Evaluable a where
   eval :: Solution -> a -> (Bool, Int)
   vars :: a -> Set String
 
 -- Evaluable instances
-
 instance Evaluable SAT where
   eval e (SAT sat) = foldl f (True, 0) sat
     where
@@ -76,8 +69,6 @@ instance Evaluable Variable where
   vars (Var x) = singleton x
 
 -- Arbitrary instances
-
-
 instance Arbitrary SAT where
   arbitrary = SAT <$> listOf1 arbitrary
 
@@ -92,8 +83,6 @@ instance Arbitrary Variable where
     return $ c [x]
 
 -- Show instances
-
-
 instance Show SAT where
   show (SAT x) = intercalate " & " (show <$> x)
 
@@ -107,22 +96,23 @@ instance Show Variable where
 -- Search state definition
 
 -- | A satisfyability problem with an associated possible solution.
-
 data SATProblem = SP SAT Solution
   deriving (Show)
 
-instance Searchable SATProblem where
+-- | All the actions that are possible on a satisfyability problem.
+newtype SATActions = Flip String
+
+instance Searchable SATProblem SATActions where
   score (SP f x) = fromIntegral . snd $ eval x f
-  neighbours (SP f x) = [SP f $ adjust not i x | i <- keys x]
+  explore (SP f x) (Flip a) = SP f $ adjust not a x 
+  neighbours (SP f x) = Flip <$> keys x
 
 -- We should match tabu on the solution. Solution is a map, and
 -- has instance Eq.
-
 instance Tabuable SATProblem Solution where
   fingerprint (SP _ x) = x
 
 -- Parser; we should split this file somehow
-
 readCNF :: FilePath -> IO (Either ParseError SAT)
 readCNF x = runParser pSAT () x <$> readFile x
 

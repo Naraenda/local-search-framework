@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances, FunctionalDependencies, UndecidableInstances #-}
 
 module LocalSearch.Framework.Tabu 
   ( Tabuable(..)
@@ -9,10 +9,10 @@ module LocalSearch.Framework.Tabu
 import LocalSearch.Framework.SearchProblem
 
 -- | Defines a searchable space where a Tabu' list can be built in
-class (Searchable s, Eq t) => Tabuable s t | s -> t where
+class (Eq t) => Tabuable s t | s -> t where
   fingerprint :: s -> t
 
--- | Wraps a state s with a list of t tabu's. If s is tabuable, then
+-- | Wraps a problem s with a list of t tabu's. If s is tabuable, then
 -- its neighbours do not include elements from the tabu list.
 data Tabu s t = Tabu 
   { state :: s 
@@ -29,15 +29,17 @@ instance Show s => Show (Tabu s t) where
 instance (Tabuable s  t) => Tabuable (Tabu s t) t where
   fingerprint = fingerprint . state
 
-instance (Tabuable s t) => Searchable (Tabu s t) where
+instance (Searchable s a, Tabuable a t) => Searchable (Tabu s t) a where
   score = score . state
-  neighbours s@(Tabu _ l _) = 
-    -- Update 'Tabu' data:
-      fmap (replaceState s)
-    -- Exlcude neighbours in tabu list:
-    . filter ((`elem` l) . fingerprint)
-    -- Get neighbouring states:
-    . neighbours $ state s
+  neighbours s = filter ((`elem` tabuList s) . fingerprint) . neighbours $ state s
+  explore s fs = s { state = explore (state s) fs }
+  -- neighbours s@(Tabu _ l _) = 
+  --   -- Update 'Tabu' data:
+  --     fmap (replaceState s)
+  --   -- Exlcude neighbours in tabu list:
+  --   . filter ((`elem` l) . fingerprint)
+  --   -- Get neighbouring states:
+  --   . neighbours $ state s
 
 -- | Replaces the internal state of 'Tabu' and adds the old state
 -- to the tabu list.

@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module LocalSearch.Tests.Problems.TSP
   ( TSP(..)
   , Node, Point, Fields, Field
@@ -31,8 +32,14 @@ type Fields = [Field]
 type Field  = (String, String)
 type DistFunc a = Num a => Point a -> Point a -> a
 
-instance Searchable TSP where
-  neighbours p = [p { nodes = n } | n <- opt2 $ nodes p]
+data TSPActions
+  = Opt2 Int Int
+
+instance Searchable TSP TSPActions where
+  neighbours p = [ Opt2 i j | i <- [1 .. length (nodes p)], j <- [0 .. i - 1]]
+
+  explore p (Opt2 i j) = p { nodes = opt2 i j (nodes p) }
+
   score = negate . tourDistance euclidean . nodes
 
 -- | Shuffles a TSP problem
@@ -56,22 +63,11 @@ distance f _       = 0
 euclidean :: Floating a => DistFunc a
 euclidean (x1, y1) (x2, y2) = sqrt ((x1 - x2) ^ 2 + (y1 - y2) ^ 2)
 
--- | Generates all different 2-opt swaps on a list.
-opt2 :: [a] -> [[a]]
-opt2 xs = [ reverseRange i j xs | i <- [1..length xs], j <- [0..i-1]]
-
-opt2r :: RandomGen g => [a] -> Rand g [a]
-opt2r xs = do
-  i <- getRandomR (1, length xs - 1)
-  j <- getRandomR (0, i - 1)
-  return $ reverseRange i j xs
-
-
 -- | Reverses a part of a list.
-reverseRange :: Int -> Int -> [a] -> [a]
-reverseRange i j xs 
+opt2 :: Int -> Int -> [a] -> [a]
+opt2 i j xs 
   | i <= j     = h ++ reverse m ++ t
-  | otherwise = reverseRange j i xs
+  | otherwise = opt2 j i xs
     where
       (h, r) = splitAt i xs
       (m, t) = splitAt (j - i) r
