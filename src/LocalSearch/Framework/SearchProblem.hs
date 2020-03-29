@@ -32,6 +32,9 @@ instance (Searchable a fa, Searchable b fb) => Searchable (Composed a b) (Either
   explore (Composed f a b) (Left  fa) = Composed f (explore a fa) b
   explore (Composed f a b) (Right fb) = Composed f a (explore b fb)
 
+instance (Show a, Show b) => Show (Composed a b) where
+  show (Composed _ a b) = show (a, b)
+
 -- | Sums the scores of two search problems
 sumScores :: (Searchable a fa, Searchable b fb) => a -> b -> Score
 sumScores a b = score a + score b

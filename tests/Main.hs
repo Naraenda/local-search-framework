@@ -6,9 +6,11 @@ import LocalSearch.Framework.HillClimbing
 import LocalSearch.Framework.Tabu 
 import Data.Foldable
 import Data.Map (fromList)
+import qualified Example
 
 main :: IO ()
-main = do
+main = Example.runExample
+{-main = do
 --(Right formula) <- readTSP "tests/cnf.txt"
 --let problem = SP formula . fromList $ (,) <$> toList (vars formula) <*> pure False
 --solution <- runClimb $ makeTabu 10 problem
@@ -23,7 +25,7 @@ main = do
       tsp <- shuffle tsp
       
       res <- runClimb tsp
-      print res
+      print res-}
 
 exampleProblem :: SATProblem
 exampleProblem = SP sat sol
