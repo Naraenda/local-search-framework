@@ -35,12 +35,12 @@ type DistFunc a = Num a => Point a -> Point a -> a
 data TSPActions
   = Opt2 Int Int
 
+instance Heuristic TSP where
+  score = negate . tourDistance euclidean . nodes
+
 instance Searchable TSP TSPActions where
   neighbours p = [ Opt2 i j | i <- [1 .. length (nodes p)], j <- [0 .. i - 1]]
-
   explore p (Opt2 i j) = p { nodes = opt2 i j (nodes p) }
-
-  score = negate . tourDistance euclidean . nodes
 
 -- | Shuffles a TSP problem
 shuffle :: TSP -> IO TSP

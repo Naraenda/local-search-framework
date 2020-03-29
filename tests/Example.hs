@@ -1,24 +1,31 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE
+    MultiParamTypeClasses
+  , DeriveGeneric
+  , FlexibleInstances
+  , DeriveAnyClass #-}
 module Example where
 
 import LocalSearch.Framework.SearchProblem
 import LocalSearch.Framework.HillClimbing
+import GHC.Generics(Generic)
 
-newtype State = Var Int
-data Actions = Increment | Decrement
+type Var = Int
+data Action = Increment | Decrement
 
-instance Searchable State Actions where
-    score (Var n) = fromIntegral n
-
-    explore (Var n) Increment = Var (n + 1)
-    explore (Var n) Decrement = Var (n - 1)
-
+instance Searchable Var Action where
     neighbours = const [Increment, Decrement]
 
-ourProblem :: Composed State State
-ourProblem = Composed h (Var 0) (Var 0)
+    explore n Increment = n + 1
+    explore n Decrement = n - 1
+
+data Problem = Problem { x :: Var, y :: Var } deriving (Generic)
+
+instance Searchable Problem (Either Action Action)
+
+ourProblem :: Hr Problem
+ourProblem = Problem 0 0 `withHeuristic` h
     where
-        h (Var x) (Var y) = fromIntegral $ 
+        h (Problem x y) = fromIntegral $ 
             - ( x ^ 2) - ( y ^ 2) 
             + (39 * x) - (97 * y)
             + ( x * y `mod` 19)
@@ -26,5 +33,5 @@ ourProblem = Composed h (Var 0) (Var 0)
 runExample :: IO ()
 runExample = do
     result <- runClimb ourProblem
-    let Composed _ (Var x) (Var y) = result
+    let Hr _ (Problem x y) = result
     putStrLn $ "{ x: " ++ show x ++ ", y: " ++ show y ++ " } " ++ show (score result)

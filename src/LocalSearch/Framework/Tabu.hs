@@ -29,8 +29,10 @@ instance Show s => Show (Tabu s t) where
 instance (Tabuable s  t) => Tabuable (Tabu s t) t where
   fingerprint = fingerprint . state
 
-instance (Searchable s a, Tabuable a t) => Searchable (Tabu s t) a where
+instance Heuristic a => Heuristic (Tabu a t) where
   score = score . state
+
+instance (Searchable s a, Tabuable a t) => Searchable (Tabu s t) a where
   neighbours s = filter ((`elem` tabuList s) . fingerprint) . neighbours $ state s
   explore s fs = s { state = explore (state s) fs }
   -- neighbours s@(Tabu _ l _) = 

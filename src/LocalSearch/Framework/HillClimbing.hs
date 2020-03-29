@@ -20,7 +20,7 @@ import LocalSearch.Framework.SearchProblem
 -- This function should probably get a different signature later. I'd prefer
 -- not having an `IO` requirement on this, but rather a different monad that
 -- allows for randomness to happen, even if calling it requires IO afterwards.
-runClimb :: Searchable s a => s -> IO s
+runClimb :: (Heuristic s, Searchable s a) => s -> IO s
 runClimb x = do
   let s = score x
   let ns = explore x <$> neighbours x
