@@ -4,7 +4,8 @@
   , FlexibleInstances
   , TypeOperators
   , DefaultSignatures
-  , FlexibleContexts #-}
+  , FlexibleContexts
+  , TypeFamilies #-}
 module LocalSearch.Framework.SearchProblem where
 
 import Control.Monad.Random.Lazy
@@ -17,17 +18,20 @@ type Score = Float
 class Heuristic a where
   score :: a -> Score
 
-class Searchable a b | a -> b where
-  -- | Returns all neighbouring states
-  neighbours :: a -> [b]
+class Searchable a where
+  type Action a :: *
+  type Action a = a
 
-  default neighbours :: (Generic a, GSearchable (Rep a) b) => a -> [b]
+  -- | Returns all neighbouring states
+  neighbours :: a -> [Action a]
+
+  default neighbours :: (Generic a, GSearchable (Rep a), Action a ~ GAction (Rep a)) => a -> [Action a]
   neighbours = gneighbors . from
 
   -- | Explore a neighbour using an action
-  explore :: a -> b -> a
+  explore :: a -> Action a -> a
 
-  default explore :: (Generic a, GSearchable (Rep a) b) => a -> b -> a
+  default explore :: (Generic a, GSearchable (Rep a), GAction (Rep a) ~ Action a) => a -> Action a -> a
   explore a f = to $ gexplore (from a) f
 
 -- | Adds an heuristic to a search problem
@@ -36,7 +40,8 @@ data Hr a = Hr (a -> Score) a
 instance Heuristic (Hr a) where
   score (Hr f x) = f x
 
-instance Searchable s a => Searchable (Hr s) a where
+instance Searchable s => Searchable (Hr s) where
+  type Action (Hr s) = Action s
   neighbours (Hr f x) = neighbours x
   explore (Hr f x) a  = Hr f $ explore x a
 
@@ -49,15 +54,21 @@ withHeuristic = flip Hr
 
 -- Generic search
 
-class GSearchable f b | f -> b where
-  gneighbors :: f a -> [b]
-  gexplore :: f a -> b -> f a
+class GSearchable f where
+  type GAction f
 
-instance GSearchable a f => GSearchable (M1 i c a) f where
+  gneighbors :: f a -> [GAction f]
+  gexplore :: f a -> GAction f -> f a
+
+instance GSearchable a => GSearchable (M1 i c a) where
+  type GAction (M1 i c a) = GAction a
+
   gneighbors (M1 x) = gneighbors x
   gexplore (M1 x) f = M1 $ gexplore x f
 
-instance (GSearchable a fa, GSearchable b fb) => GSearchable (a :*: b) (Either fa fb) where
+instance (GSearchable a, GSearchable b) => GSearchable (a :*: b) where
+  type GAction (a :*: b) = Either (GAction a) (GAction b)
+
   gneighbors (a :*: b) = (Left <$> gneighbors a) ++ (Right <$> gneighbors b)
   gexplore (a :*: b) (Left  f) = gexplore a f :*: b
   gexplore (a :*: b) (Right f) = a :*: gexplore b f
@@ -78,10 +89,14 @@ instance (GSearchable a fa, GSearchable b fb) => GSearchable (a :+: b) (Either f
   gexplore (R1 x) (Right f) = R1 $ gexplore x f
 -}
 
-instance (Searchable a f) => GSearchable (K1 i a) f  where
+instance (Searchable a) => GSearchable (K1 i a)  where
+  type GAction (K1 i a) = Action a
+
   gneighbors (K1 s) = neighbours s
   gexplore (K1 s) f = K1 $ explore s f
 
-instance GSearchable U1 () where
+instance GSearchable U1 where
+  type GAction U1 = ()
+
   gneighbors _ = []
   gexplore _ _ = U1

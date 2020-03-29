@@ -1,5 +1,6 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes
+  , MultiParamTypeClasses
+  , TypeFamilies #-}
 module LocalSearch.Tests.Problems.TSP
   ( TSP(..)
   , Node, Point, Fields, Field
@@ -38,7 +39,8 @@ data TSPActions
 instance Heuristic TSP where
   score = negate . tourDistance euclidean . nodes
 
-instance Searchable TSP TSPActions where
+instance Searchable TSP where
+  type Action TSP = TSPActions
   neighbours p = [ Opt2 i j | i <- [1 .. length (nodes p)], j <- [0 .. i - 1]]
   explore p (Opt2 i j) = p { nodes = opt2 i j (nodes p) }
 

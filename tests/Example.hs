@@ -2,7 +2,8 @@
     MultiParamTypeClasses
   , DeriveGeneric
   , FlexibleInstances
-  , DeriveAnyClass #-}
+  , DeriveAnyClass
+  , TypeFamilies #-}
 module Example where
 
 import LocalSearch.Framework.SearchProblem
@@ -10,9 +11,10 @@ import LocalSearch.Framework.HillClimbing
 import GHC.Generics(Generic)
 
 type Var = Int
-data Action = Increment | Decrement
+data VarAction = Increment | Decrement
 
-instance Searchable Var Action where
+instance Searchable Var where
+    type Action Var = VarAction
     neighbours = const [Increment, Decrement]
 
     explore n Increment = n + 1
@@ -20,7 +22,8 @@ instance Searchable Var Action where
 
 data Problem = Problem { x :: Var, y :: Var } deriving (Generic)
 
-instance Searchable Problem (Either Action Action)
+instance Searchable Problem where
+    type Action Problem = Either VarAction VarAction
 
 ourProblem :: Hr Problem
 ourProblem = Problem 0 0 `withHeuristic` h
