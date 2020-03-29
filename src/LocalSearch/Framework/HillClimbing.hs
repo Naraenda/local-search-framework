@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module LocalSearch.Framework.HillClimbing
   ( runClimb
   )
@@ -7,7 +9,7 @@ import System.Random
 import Control.Monad.Random.Lazy (evalRandIO)
 import Data.Maybe(catMaybes)
 
-import LocalSearch.Framework.SearchProblem (Searchable(score, neighbours, randomNeighbour))
+import LocalSearch.Framework.SearchProblem
 
 -- | Runs a hill climbing algorithm on a `Searchable`. Uses the `neighbours`
 -- function of the Searchable to discover new states, and randomly selects a
@@ -18,10 +20,10 @@ import LocalSearch.Framework.SearchProblem (Searchable(score, neighbours, random
 -- This function should probably get a different signature later. I'd prefer
 -- not having an `IO` requirement on this, but rather a different monad that
 -- allows for randomness to happen, even if calling it requires IO afterwards.
-runClimb :: Searchable a => a -> IO a
+runClimb :: Searchable s a => s -> IO s
 runClimb x = do
   let s = score x
-  let ns = neighbours x
+  let ns = explore x <$> neighbours x
   let nsScores = score <$> ns
   let newStates = filter ((>s) . score) ns
 

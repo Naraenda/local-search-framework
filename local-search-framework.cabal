@@ -35,6 +35,7 @@ executable local-search-tests
   other-modules:
       LocalSearch.Tests.Problems.Satisfiability
     , LocalSearch.Tests.Problems.TSP
+    , Example
   build-depends:
       base >=4.12 && <4.13
     , local-search-framework
