@@ -130,31 +130,28 @@ instance Tabuable SATProblem Solution where
 
 -- Genetic instance
 -- | The indices here are inclusive, and the numbers must be in range of the list. This means that /some/ crossing over will always happen.
-data CrossOver = LeftOf Int | RightOf Int
-data Mutation = Mut Int Mutation | EmptyMut
+data SATCrossOver = LeftOf Int | RightOf Int
+data SATMutation = Mut Int SATMutation | EmptyMut
 
-instance EnumRandom SAT CrossOver where
-  getRandomValue s = do
+instance Crossover SAT SATCrossOver where
+  getRandomCrossover s = do
     v <- getRandom
     let constructor = if v then LeftOf else RightOf
     let maxR = length $ vars s
     ind <- getRandomR (0, maxR)
     return $ constructor ind
 
-instance EnumRandom SAT Mutation where
-  getRandomValue s =
+instance Mutation SAT SATMutation where
+  getRandomMutation p s =
     do
-      q <- getRandomR (0.0, 1.0)
-      if q < p
+      doMut <- shouldMutate p
+      if doMut
         then do
           v <- getRandomR (0, length (vars s) - 1)
-          Mut v <$> getRandomValue s
+          Mut v <$> getRandomMutation p s
         else return EmptyMut
-    where
-      p :: Float
-      p = 0.075 -- TODO Make this a separate type-class!
 
-instance GeneticAlgorithm CrossOver Mutation SAT SATProblem where
+instance GeneticAlgorithm SATCrossOver SATMutation SAT SATProblem where
   randomIndividual s  = SP s <$> sol
     where
       vs = toList $ vars s
@@ -169,7 +166,7 @@ instance GeneticAlgorithm CrossOver Mutation SAT SATProblem where
   mutation m x        = mutateSAT m x
   crossover co p1 p2  = crossoverSAT co p1 p2
 
-mutateSAT :: Mutation -> SATProblem -> SATProblem
+mutateSAT :: SATMutation -> SATProblem -> SATProblem
 mutateSAT EmptyMut x  = x
 mutateSAT (Mut i m) (SP f x) =
     mutateSAT m . SP f $ invertMapAt i x
@@ -180,7 +177,7 @@ mutateSAT (Mut i m) (SP f x) =
   -- neighbours (SP f x) = [SP f $ adjust not i x | i <- keys x]
 
 -- The formulas are equal, so we only need one
-crossoverSAT :: CrossOver -> SATProblem -> SATProblem -> SATProblem
+crossoverSAT :: SATCrossOver -> SATProblem -> SATProblem -> SATProblem
 crossoverSAT co (SP f s1) (SP _ s2) = SP f . fromList $
     case co of
       (LeftOf x)  -> clsat x (M.toList s1) (M.toList s2)
