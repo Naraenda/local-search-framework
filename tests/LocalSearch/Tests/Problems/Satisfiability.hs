@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-
-module LocalSearch.Tests.Problems.Satisfiability
+{-# LANGUAGE FlexibleInstances #-}
+module LocalSearch.Tests.Problems.Satisfiability 
   ( SATProblem(..)
   , SAT(..)
   , Clause(..)
@@ -13,16 +12,18 @@ module LocalSearch.Tests.Problems.Satisfiability
   )
   where
 
+import Data.Char (isSpace)
 import Data.List(intercalate)
 import Data.Set(Set, unions, singleton)
 import Data.Map(Map, (!), adjust, keys)
+import Data.Maybe (catMaybes)
 
 import Test.QuickCheck
 
 import Text.Parsec
 
 import LocalSearch.Framework.SearchProblem
-import LocalSearch.Framework.Tabu(Tabuable(..))
+import LocalSearch.Framework.Tabu
 
 -- Problem definition
 
@@ -49,14 +50,14 @@ class Evaluable a where
 -- Evaluable instances
 instance Evaluable SAT where
   eval e (SAT sat) = foldl f (True, 0) sat
-    where
+    where 
       f a b = merge a $ eval e b
       merge (a0, b0) (a1, b1) = (a0 && a1, b0 + b1)
   vars (SAT x) = unions $ fmap vars x
 
 instance Evaluable Clause where
   eval e (Clause x) = check $ foldl f (False, 0) x
-    where
+    where 
       f a b = merge a $ eval e b
       merge (a0, b0) (a1, b1) = (a0 || a1, 0)
       check (x, _) = (x, if x then 1 else 0)
@@ -70,11 +71,15 @@ instance Evaluable Variable where
 
 -- Arbitrary instances
 instance Arbitrary SAT where
-  arbitrary = SAT <$> listOf1 arbitrary
+  arbitrary = do
+    x <- listOf1 (arbitrary :: Gen Clause)
+    return $ SAT x
 
 instance Arbitrary Clause where
-  arbitrary = Clause <$> listOf1 arbitrary
-
+  arbitrary = do 
+    x <- resize 3 $ listOf1 (arbitrary :: Gen Variable)
+    return $ Clause x
+    
 instance Arbitrary Variable where
   arbitrary = do
     c <- elements [Not, Var]
@@ -92,7 +97,7 @@ instance Show Clause where
 instance Show Variable where
   show (Not x) = "-" ++ x
   show (Var x) = x
-
+  
 -- Search state definition
 
 -- | A satisfyability problem with an associated possible solution.
@@ -114,16 +119,79 @@ instance Tabuable SATProblem Solution where
 
 -- Parser; we should split this file somehow
 readCNF :: FilePath -> IO (Either ParseError SAT)
-readCNF x = runParser pSAT () x <$> readFile x
+readCNF x = readFile x >>= return . runParser pCNFFile () x
 
+pCNFFile :: Parsec String () SAT
+pCNFFile = do
+  many pCommentLine
+  (vcount, ccount) <- pProblemLine
+  spaces
+  cs <- pClauses ccount vcount
+  -- TODO better error handling?
+  return $ SAT cs
+
+pCommentLine :: Parsec String () String
+pCommentLine = char 'c' *> (option "" $ char ' ' *> many (noneOf "\n")) <* char '\n'
+
+pProblemLine :: Parsec String () (Int, Int)
+pProblemLine = (,) <$
+      char 'p'
+  <*  pWhitespace
+  <*  string "cnf"
+  <*  pWhitespace
+  <*> pInt
+  <*  pWhitespace
+  <*> pInt
+  <*  many (satisfy $ \x -> isSpace x && x /= '\n')
+  <*  char '\n'
+
+pInt :: Parsec String () Int
+pInt = read <$> many1 digit
+
+pClauses :: Int -- ^ The amount of clauses
+         -> Int -- ^ The amount of variables (for error handling)
+         -> Parsec String () [Clause] -- ^ The clauses in the input
+pClauses cc vc = fmap Clause <$> sequence (fmap (const pNonLastClause) [1..cc-1] ++ [pLastClause])
+
+pNonLastClause :: Parsec String () [Variable]
+pNonLastClause = (:) <$> pNotVar <*> pNonLastClause <|> do
+  x <- digit
+  if x == '0'
+    then pWhitespace *> return []
+    else do
+      xs <- many digit
+      pWhitespace
+      rest <- pNonLastClause
+      return $ Var (x:xs) : rest
+
+pLastClause :: Parsec String () [Variable]
+pLastClause = many $ pNotVar <|> pVar
+
+pVar :: Parsec String () Variable
+pVar = Var <$> many digit <* pWhitespace
+
+pNotVar :: Parsec String () Variable
+pNotVar = Not <$ char '-' <*> many digit <* pWhitespace
+
+pWhitespace :: Parsec String () ()
+pWhitespace = () <$ space <* spaces
+
+-- intercalate " & " (show <$> x)
 pSAT :: Parsec String () SAT
 pSAT = SAT <$> sepBy pClause (string " & ")
 
+-- "(" ++ intercalate "|" (show <$> x) ++ ")"
 pClause :: Parsec String () Clause
 pClause = Clause <$ char '(' <*> sepBy pVariable (char '|') <* char ')'
 
+{-
+instance Show Variable where
+  show (Not x) = "-" ++ x
+  show (Var x) = x
+-}
 pVariable :: Parsec String () Variable
 pVariable =
       Not <$  char '-' <*> many letter
   <|> Var <$>              many letter
 
+  

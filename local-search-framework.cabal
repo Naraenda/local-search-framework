@@ -20,6 +20,7 @@ extra-source-files:  CHANGELOG.md
 library
   exposed-modules:
       LocalSearch.Framework.HillClimbing
+    , LocalSearch.Framework.SimulatedAnnealing
     , LocalSearch.Framework.SearchProblem
     , LocalSearch.Framework.Tabu
   build-depends:
