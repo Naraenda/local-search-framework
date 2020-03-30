@@ -20,7 +20,7 @@ class Heuristic a where
 
 class Searchable a where
   type Action a :: *
-  type Action a = a
+  type Action a = GAction (Rep a)
 
   -- | Returns all neighbouring states
   neighbours :: a -> [Action a]
