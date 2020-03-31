@@ -29,8 +29,10 @@ instance Show s => Show (Tabu s t) where
 instance (Tabuable s  t) => Tabuable (Tabu s t) t where
   fingerprint = fingerprint . state
 
-instance (Searchable s a, Tabuable a t) => Searchable (Tabu s t) a where
+instance Heuristic a => Heuristic (Tabu a t) where
   score = score . state
+{-
+instance (Searchable s, Tabuable t) => Searchable (Tabu s t) where
   neighbours s = filter ((`elem` tabuList s) . fingerprint) . neighbours $ state s
   explore s fs = s { state = explore (state s) fs }
   -- neighbours s@(Tabu _ l _) = 
@@ -47,3 +49,4 @@ replaceState :: (Tabuable s t) =>  Tabu s t -> s -> Tabu s t
 replaceState t@(Tabu s l n) x = Tabu x l' n
   where
     l' = fingerprint t : drop (length l - n + 1) l
+-}

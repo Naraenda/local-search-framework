@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances
+  , TypeFamilies #-}
 module LocalSearch.Tests.Problems.Satisfiability 
   ( SATProblem(..)
   , SAT(..)
@@ -114,8 +115,11 @@ data SATProblem = SP SAT Solution
 -- | All the actions that are possible on a satisfyability problem.
 newtype SATActions = Flip String
 
-instance Searchable SATProblem SATActions where
+instance Heuristic SATProblem where
   score (SP f x) = fromIntegral . snd $ eval x f
+
+instance Searchable SATProblem where
+  type Action SATProblem = SATActions
   explore (SP f x) (Flip a) = SP f $ adjust not a x 
   neighbours (SP f x) = Flip <$> keys x
 

@@ -6,19 +6,18 @@ where
 import System.Random
 
 import LocalSearch.Framework.SearchProblem
-  (Searchable(score, neighbours, explore), Score)
 
 type Iterations = Int
 type Temperature = Float
 
-runSA :: Searchable a b
+runSA :: (Heuristic a, Searchable a)
       => Iterations -- ^ The max amount of iterations to run
       -> a          -- ^ The initial state
       -> IO a       -- ^ The resulting state
 --runClimb :: (Show a, Searchable a) => a -> IO a -- for debugging
 runSA = runSA' 0
 
-runSA'  :: Searchable a b
+runSA'  :: (Heuristic a, Searchable a)
         => Iterations -- ^ The amount of iterations already run
         -> Iterations -- ^ The max amount of iterations to run
         -> a          -- ^ The current state
