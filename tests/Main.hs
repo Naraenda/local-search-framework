@@ -1,13 +1,16 @@
 module Main where
 
-import LocalSearch.Tests.Problems.Satisfiability
-import LocalSearch.Tests.Problems.TSP
 import LocalSearch.Framework.HillClimbing
 import LocalSearch.Framework.Tabu
 import LocalSearch.Framework.SimulatedAnnealing
 import LocalSearch.Framework.SearchProblem
+
+import LocalSearch.Tests.Problems.Satisfiability
+import LocalSearch.Tests.Problems.TSP
+
 import Data.Foldable
 import Data.Map (fromList)
+
 import qualified Example
 
 main :: IO ()
@@ -27,7 +30,6 @@ main = do
       print $ score solution
 -}
 
-
 exampleProblem :: SATProblem
 exampleProblem = SP sat sol
   where
@@ -37,7 +39,4 @@ exampleProblem = SP sat sol
           , Clause [Var "d"]
           ]
     sol = fromList $ (,) <$> toList (vars sat) <*> pure False
-
-
-
 

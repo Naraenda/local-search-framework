@@ -1,8 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Example where
 
-import LocalSearch.Framework.SearchProblem
+import Data.Foldable
+import Data.Map (fromList)
+
+import LocalSearch.Framework.GeneticAlgorithm
 import LocalSearch.Framework.HillClimbing
+import LocalSearch.Framework.SearchProblem
+
+import LocalSearch.Tests.Problems.Satisfiability hiding (Var)
 
 newtype State = Var Int
 data Actions = Increment | Decrement
@@ -28,3 +34,22 @@ runExample = do
     result <- runClimb ourProblem
     let Composed _ (Var x) (Var y) = result
     putStrLn $ "{ x: " ++ show x ++ ", y: " ++ show y ++ " } " ++ show (score result)
+
+-- GA example
+popSize :: PopulationSize
+popSize = 10
+
+genIterations :: Iterations
+genIterations = 10
+
+mutateProb :: Probability
+mutateProb = 0.05
+
+runGeneticExample :: IO ()
+runGeneticExample = do
+  (Right formula) <- readCNF "tests/cnf.txt"
+  let problem = SP formula . fromList $ (,) <$> toList (vars formula) <*> pure False
+  putStrLn "Running genetic"
+  solution <- runGenetic popSize genIterations mutateProb formula
+  print solution
+
