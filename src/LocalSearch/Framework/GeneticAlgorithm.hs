@@ -46,7 +46,7 @@ class Crossover s a | a -> s where
 -- the functions crossover and mutation based on these types. The value passed
 -- to these functions will be generated automatically by the solver.
 class (Crossover space cross, Mutation space mut) =>
-      GeneticAlgorithm cross mut space a | a -> mut, a -> cross, a -> space where
+      GeneticAlgorithm cross mut space a | a -> mut, a -> cross, space -> a where
   randomIndividual  :: RandomGen g => space -> Rand g a
   fitness           :: a -> Fitness
   crossover         :: cross -> a -> a -> a

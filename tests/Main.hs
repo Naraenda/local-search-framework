@@ -23,7 +23,7 @@ main = do
   --putStrLn "Running climb"
   --solution <- runClimb $ makeTabu 10 problem
   putStrLn "Running genetic"
-  solution <- (runGenetic popSize genIterations mutateProb $ formula :: IO SATProblem)
+  solution <- runGenetic popSize genIterations mutateProb formula
   print solution
 
 exampleProblem :: SATProblem
