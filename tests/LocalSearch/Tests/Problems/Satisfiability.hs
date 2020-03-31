@@ -13,16 +13,22 @@ module LocalSearch.Tests.Problems.Satisfiability
   )
   where
 
+import Control.Monad.Random.Lazy hiding (fromList)
+
+import Data.Bifunctor (second)
 import Data.Char (isSpace)
-import Data.List(intercalate)
-import Data.Set(Set, unions, singleton)
-import Data.Map(Map, (!), adjust, keys)
+import Data.Foldable (toList)
+import Data.List (intercalate)
+import Data.Set (Set, unions, singleton)
+import Data.Map (Map, (!), adjust, keys, fromList)
+import qualified Data.Map as M (toList)
 import Data.Maybe (catMaybes)
 
 import Test.QuickCheck
 
 import Text.Parsec
 
+import LocalSearch.Framework.GeneticAlgorithm
 import LocalSearch.Framework.SearchProblem
 import LocalSearch.Framework.Tabu
 
@@ -69,6 +75,7 @@ instance Evaluable Variable where
   eval e (Var x) = (      e ! x, 0)
   vars (Not x) = singleton x
   vars (Var x) = singleton x
+
 
 -- Arbitrary instances
 instance Arbitrary SAT where
@@ -121,6 +128,67 @@ instance Searchable SATProblem where
 instance Tabuable SATProblem Solution where
   fingerprint (SP _ x) = x
 
+-- Genetic instance
+-- | The indices here are inclusive, and the numbers must be in range of the list. This means that /some/ crossing over will always happen.
+data SATCrossOver = LeftOf Int | RightOf Int
+data SATMutation = Mut Int SATMutation | EmptyMut
+
+instance Crossover SAT SATCrossOver where
+  getRandomCrossover s = do
+    v <- getRandom
+    let constructor = if v then LeftOf else RightOf
+    let maxR = length $ vars s
+    ind <- getRandomR (0, maxR)
+    return $ constructor ind
+
+instance Mutation SAT SATMutation where
+  getRandomMutation p s =
+    do
+      doMut <- shouldMutate p
+      if doMut
+        then do
+          v <- getRandomR (0, length (vars s) - 1)
+          Mut v <$> getRandomMutation p s
+        else return EmptyMut
+
+instance GeneticAlgorithm SATCrossOver SATMutation SAT SATProblem where
+  randomIndividual s  = SP s <$> sol
+    where
+      vs = toList $ vars s
+      
+      sol :: RandomGen g => Rand g Solution
+      sol = fromList <$> traverse sequence (zip vs (repeat randBool))
+
+      randBool :: RandomGen g => Rand g Bool
+      randBool = getRandom
+
+  fitness (SP f x)    = fromIntegral . snd $ eval x f
+  mutation m x        = mutateSAT m x
+  crossover co p1 p2  = crossoverSAT co p1 p2
+
+mutateSAT :: SATMutation -> SATProblem -> SATProblem
+mutateSAT EmptyMut x  = x
+mutateSAT (Mut i m) (SP f x) =
+    mutateSAT m . SP f $ invertMapAt i x
+  where
+    invertMapAt i = fromList . invertListAt i . M.toList
+    invertListAt 0 (x:xs) = second not x : xs
+    invertListAt i (x:xs) = x : invertListAt (i - 1) xs
+  -- neighbours (SP f x) = [SP f $ adjust not i x | i <- keys x]
+
+-- The formulas are equal, so we only need one
+crossoverSAT :: SATCrossOver -> SATProblem -> SATProblem -> SATProblem
+crossoverSAT co (SP f s1) (SP _ s2) = SP f . fromList $
+    case co of
+      (LeftOf x)  -> clsat x (M.toList s1) (M.toList s2)
+      (RightOf x) -> crsat x (M.toList s1) (M.toList s2)
+  where
+    clsat 0 s1 s2 = s1
+    clsat n (_:s1) (y:s2) = y : clsat (n - 1) s1 s2
+    crsat 0 [] [] = []
+    crsat 0 (_:s1) (y:s2) = y : crsat 0 s1 s2
+    crsat n (x:s1) (_:s2) = x : crsat (n - 1) s1 s2
+  
 -- Parser; we should split this file somehow
 readCNF :: FilePath -> IO (Either ParseError SAT)
 readCNF x = readFile x >>= return . runParser pCNFFile () x

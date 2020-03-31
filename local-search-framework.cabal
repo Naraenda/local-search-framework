@@ -23,6 +23,7 @@ library
     , LocalSearch.Framework.SimulatedAnnealing
     , LocalSearch.Framework.SearchProblem
     , LocalSearch.Framework.Tabu
+    , LocalSearch.Framework.GeneticAlgorithm
   build-depends:
       base >=4.12 && <4.13
     , MonadRandom
@@ -39,6 +40,7 @@ executable local-search-tests
   build-depends:
       base >=4.12 && <4.13
     , local-search-framework
+    , MonadRandom
     , random
     , MonadRandom
     , containers
