@@ -13,28 +13,35 @@ import Data.Maybe (maybeToList)
 
 import GHC.Generics
 
+-- | The score of a state. For genetic algorithms, this is 
+-- also called the fitness.
 type Score = Double
 
+-- | Provides a method to determine the score/fitness of a state.
 class Heuristic a where
   score :: a -> Score
 
+-- | A type is searchable when there is a state that can be 
+-- transformed into a neighbouring state. 
 class Searchable a where
   type Action a :: *
   type Action a = GAction (Rep a)
 
-  -- | Returns all neighbouring states
+  -- | Returns all neighbouring transformations.
   neighbours :: a -> [Action a]
 
-  default neighbours :: (Generic a, GSearchable (Rep a), Action a ~ GAction (Rep a)) => a -> [Action a]
+  default neighbours :: (Generic a, GSearchable (Rep a), Action a ~ GAction (Rep a)) 
+    => a -> [Action a]
   neighbours = gneighbors . from
 
-  -- | Explore a neighbour using an action
+  -- | Applies a transformation on a state.
   explore :: a -> Action a -> a
 
-  default explore :: (Generic a, GSearchable (Rep a), GAction (Rep a) ~ Action a) => a -> Action a -> a
+  default explore :: (Generic a, GSearchable (Rep a), GAction (Rep a) ~ Action a) 
+    => a -> Action a -> a
   explore a f = to $ gexplore (from a) f
 
--- | Adds an heuristic to a search problem
+-- | Adds an heuristic to a search problem.
 data Hr a = Hr (a -> Score) a
 
 instance Heuristic (Hr a) where
@@ -52,8 +59,7 @@ instance Show a => Show (Hr a) where
 withHeuristic :: a -> (a -> Score) -> Hr a
 withHeuristic = flip Hr
 
--- Generic search
-
+-- | `Searchable` class but for generic `Rep`.
 class GSearchable f where
   type GAction f
 
