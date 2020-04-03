@@ -10,13 +10,18 @@ import LocalSearch.Framework.SearchProblem
 type Iterations = Int
 type Temperature = Score
 
+-- | Runs the simulated annealing algorithm on the given searchable. Requires
+-- an initial state, but should work on /any/ initial state. Runs for a set
+-- amount of iterations, and the temperature is based on the ratio of
+-- iterations left and total iterations.
 runSA :: (Heuristic a, Searchable a)
       => Iterations -- ^ The max amount of iterations to run
       -> a          -- ^ The initial state
       -> IO a       -- ^ The resulting state
---runClimb :: (Show a, Searchable a) => a -> IO a -- for debugging
 runSA = runSA' 0
 
+-- | Actually runs the simulated annealing; the above is only a helper function
+-- so users don't do dumb things.
 runSA'  :: (Heuristic a, Searchable a)
         => Iterations -- ^ The amount of iterations already run
         -> Iterations -- ^ The max amount of iterations to run
@@ -32,11 +37,17 @@ runSA' c m s
     let sRes = if p (score s) (score sNew) t >= r then sNew else s
     runSA' (c + 1) m sRes
 
+-- | Gets the probability of picking a given new state. Sometimes you need to
+-- pass a worse state to get to a new, better state. This probability is based
+-- on the scores of the current state and the new state, and the current
+-- temperature.
 p :: Score -> Score -> Temperature -> Score
 p c n t
   | n > c = 1.0 -- Maximal probability; better than it was before
   | otherwise = exp $ -(c - n) / t
 
+-- | Gets the current temperature based on the iterations and the minimal and
+-- maximal temperature.
 temperature :: Iterations   -- ^ The current amount of iterations
             -> Iterations   -- ^ The maximum amount of iterations
             -> Temperature  -- ^ The minimum temperature

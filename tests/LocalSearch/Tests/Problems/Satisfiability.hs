@@ -191,9 +191,12 @@ crossoverSAT co (SP f s1) (SP _ s2) = SP f . fromList $
     crsat 0 (_:s1) (y:s2) = y : crsat 0 s1 s2
     crsat n (x:s1) (_:s2) = x : crsat (n - 1) s1 s2
   
--- Parser; we should split this file somehow
+-- | Parses a CNF file at the given `FilePath`, and returns the result of
+-- parsing this file.
 readCNF :: FilePath -> IO (Either ParseError SAT)
 readCNF x = readFile x >>= return . runParser pCNFFile () x
+
+-- Auxillary parsing functions; internal only.
 
 pCNFFile :: Parsec String () SAT
 pCNFFile = do
@@ -250,22 +253,3 @@ pNotVar = Not <$ char '-' <*> many digit <* pWhitespace
 pWhitespace :: Parsec String () ()
 pWhitespace = () <$ space <* spaces
 
--- intercalate " & " (show <$> x)
-pSAT :: Parsec String () SAT
-pSAT = SAT <$> sepBy pClause (string " & ")
-
--- "(" ++ intercalate "|" (show <$> x) ++ ")"
-pClause :: Parsec String () Clause
-pClause = Clause <$ char '(' <*> sepBy pVariable (char '|') <* char ')'
-
-{-
-instance Show Variable where
-  show (Not x) = "-" ++ x
-  show (Var x) = x
--}
-pVariable :: Parsec String () Variable
-pVariable =
-      Not <$  char '-' <*> many letter
-  <|> Var <$>              many letter
-
-  

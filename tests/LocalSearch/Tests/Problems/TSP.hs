@@ -80,6 +80,12 @@ opt2 i j xs
 readTSP :: FilePath -> IO (Either ParseError TSP)
 readTSP x = runParser pTSP () x <$> readFile x 
 
+-- Auxillary parser functions; internal only
+
+-- Note that the grammar used to parse the files is quite clear from the code
+-- itself. We did not make this format ourselves, but we're using this format
+-- to get benchmarking problems from other places.
+
 pTSP :: Parsec String () TSP
 pTSP =
   do
