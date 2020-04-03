@@ -8,7 +8,7 @@ import System.Random
 import LocalSearch.Framework.SearchProblem
 
 type Iterations = Int
-type Temperature = Float
+type Temperature = Score
 
 runSA :: (Heuristic a, Searchable a)
       => Iterations -- ^ The max amount of iterations to run
@@ -32,7 +32,7 @@ runSA' c m s
     let sRes = if p (score s) (score sNew) t >= r then sNew else s
     runSA' (c + 1) m sRes
 
-p :: Score -> Score -> Temperature -> Float
+p :: Score -> Score -> Temperature -> Score
 p c n t
   | n > c = 1.0 -- Maximal probability; better than it was before
   | otherwise = exp $ -(c - n) / t

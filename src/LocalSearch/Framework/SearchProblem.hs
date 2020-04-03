@@ -13,7 +13,7 @@ import Data.Maybe (maybeToList)
 
 import GHC.Generics
 
-type Score = Float
+type Score = Double
 
 class Heuristic a where
   score :: a -> Score
