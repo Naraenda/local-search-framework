@@ -151,20 +151,22 @@ instance Mutation SAT SATMutation where
           Mut v <$> getRandomMutation p s
         else return EmptyMut
 
-instance GeneticAlgorithm SATCrossOver SATMutation SAT SATProblem where
+instance Genetic SATProblem where
+  type Mut   SATProblem = SATMutation
+  type Cross SATProblem = SATCrossOver
+  type Space SATProblem = SAT
   randomIndividual s  = SP s <$> sol
     where
-      vs = toList $ vars s
-      
       sol :: RandomGen g => Rand g Solution
       sol = fromList <$> traverse sequence (zip vs (repeat randBool))
 
+      vs = toList $ vars s
+
       randBool :: RandomGen g => Rand g Bool
       randBool = getRandom
-
-  fitness (SP f x)    = fromIntegral . snd $ eval x f
-  mutation m x        = mutateSAT m x
-  crossover co p1 p2  = crossoverSAT co p1 p2
+  
+  mutation  = mutateSAT
+  crossover = crossoverSAT
 
 mutateSAT :: SATMutation -> SATProblem -> SATProblem
 mutateSAT EmptyMut x  = x

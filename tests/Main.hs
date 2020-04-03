@@ -14,7 +14,7 @@ import Data.Map (fromList)
 import qualified Example
 
 main :: IO ()
-main = Example.runExample
+main = Example.runExampleGA
 {-
 main = do
   formula <- readCNF "tests/test1.cnf"

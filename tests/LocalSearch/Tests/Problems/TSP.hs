@@ -26,7 +26,7 @@ data TSP = TSP
   }
   deriving (Show)
 
-type Node = Point Float
+type Node = Point Double
 type Point a = (a, a)
 
 type Fields = [Field]
@@ -96,7 +96,7 @@ pNodeCoordSection = string "NODE_COORD_SECTION" <* char '\n'
 pNode :: Parsec String () Node
 pNode = (,) <$ pInt <* char ' ' <*> pInt <* char ' ' <*> pInt
 
-pInt :: Parsec String () Float
+pInt :: Parsec String () Double
 pInt = read <$> many1 digit
 
 getField :: String -> Fields -> Maybe String
